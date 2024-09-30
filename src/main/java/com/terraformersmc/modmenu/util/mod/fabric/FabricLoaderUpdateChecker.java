@@ -1,13 +1,5 @@
 package com.terraformersmc.modmenu.util.mod.fabric;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.gson.JsonParser;
 import com.terraformersmc.modmenu.api.UpdateChannel;
 import com.terraformersmc.modmenu.api.UpdateChecker;
@@ -15,11 +7,19 @@ import com.terraformersmc.modmenu.api.UpdateInfo;
 import com.terraformersmc.modmenu.util.HttpUtil;
 import com.terraformersmc.modmenu.util.JsonUtil;
 import com.terraformersmc.modmenu.util.OptionalUtil;
-
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.SemanticVersion;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.VersionParsingException;
+import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 public class FabricLoaderUpdateChecker implements UpdateChecker {
 	public static final Logger LOGGER = LoggerFactory.getLogger("Mod Menu/Fabric Update Checker");
@@ -111,7 +111,7 @@ public class FabricLoaderUpdateChecker implements UpdateChecker {
 		}
 
 		LOGGER.debug("Fabric Loader has a matching update available!");
-		return new FabricLoaderUpdateInfo(stableVersion);
+		return new FabricLoaderUpdateInfo(match.getFriendlyString(), stableVersion);
 	}
 
 	private static boolean isNewer(Version self, Version other) {
@@ -123,15 +123,22 @@ public class FabricLoaderUpdateChecker implements UpdateChecker {
 	}
 
 	private static class FabricLoaderUpdateInfo implements UpdateInfo {
+		private final String version;
 		private final boolean isStable;
 
-		private FabricLoaderUpdateInfo(boolean isStable) {
+		private FabricLoaderUpdateInfo(String version, boolean isStable) {
+			this.version = version;
 			this.isStable = isStable;
 		}
 
 		@Override
 		public boolean isUpdateAvailable() {
 			return true;
+		}
+
+		@Override
+		public @Nullable Text getUpdateMessage() {
+			return Text.translatable("modmenu.install_version", this.version);
 		}
 
 		@Override

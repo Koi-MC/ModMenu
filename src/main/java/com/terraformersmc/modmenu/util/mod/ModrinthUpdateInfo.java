@@ -2,12 +2,17 @@ package com.terraformersmc.modmenu.util.mod;
 
 import com.terraformersmc.modmenu.api.UpdateChannel;
 import com.terraformersmc.modmenu.api.UpdateInfo;
+import com.terraformersmc.modmenu.util.VersionUtil;
+import net.minecraft.text.Text;
+import org.jetbrains.annotations.Nullable;
 
 public class ModrinthUpdateInfo implements UpdateInfo {
 	protected final String projectId;
 	protected final String versionId;
 	protected final String versionNumber;
 	protected final UpdateChannel updateChannel;
+
+	private static final Text MODRINTH_TEXT = Text.translatable("modmenu.modrinth");
 
 	public ModrinthUpdateInfo(String projectId, String versionId, String versionNumber, UpdateChannel updateChannel) {
 		this.projectId = projectId;
@@ -19,6 +24,11 @@ public class ModrinthUpdateInfo implements UpdateInfo {
 	@Override
 	public boolean isUpdateAvailable() {
 		return true;
+	}
+
+	@Override
+	public @Nullable Text getUpdateMessage() {
+		return Text.translatable("modmenu.updateText", VersionUtil.stripPrefix(this.versionNumber), MODRINTH_TEXT);
 	}
 
 	@Override

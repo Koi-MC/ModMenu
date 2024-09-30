@@ -1,9 +1,12 @@
 package com.terraformersmc.modmenu.util.mod;
 
+import com.terraformersmc.modmenu.ModMenu;
+import com.terraformersmc.modmenu.TextPlaceholderApiCompat;
 import com.terraformersmc.modmenu.api.UpdateChecker;
 import com.terraformersmc.modmenu.api.UpdateInfo;
 import com.terraformersmc.modmenu.config.ModMenuConfig;
 import com.terraformersmc.modmenu.util.mod.fabric.FabricIconHandler;
+import eu.pb4.placeholders.api.ParserContext;
 import net.minecraft.client.resource.language.I18n;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.text.Text;
@@ -15,103 +18,98 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public interface Mod {
-	@NotNull
-	String getId();
+	@NotNull String getId();
 
-	@NotNull
-	String getName();
+	@NotNull String getName();
 
 	@NotNull
 	default String getTranslatedName() {
 		String translationKey = "modmenu.nameTranslation." + getId();
-		if ((getId().equals("minecraft") || getId().equals("java") || ModMenuConfig.TRANSLATE_NAMES.getValue()) && I18n.hasTranslation(translationKey)) {
+		if ((getId().equals("minecraft") || getId().equals("java") || ModMenuConfig.TRANSLATE_NAMES.getValue()) && I18n.hasTranslation(
+			translationKey)) {
 			return I18n.translate(translationKey);
 		}
 		return getName();
 	}
 
-	@NotNull
-	NativeImageBackedTexture getIcon(FabricIconHandler iconHandler, int i);
+	@NotNull NativeImageBackedTexture getIcon(FabricIconHandler iconHandler, int i);
 
 	@NotNull
 	default String getSummary() {
-		return getTranslatedSummary();
+		String string = getTranslatedSummary();
+		return ModMenu.TEXT_PLACEHOLDER_COMPAT ?
+			TextPlaceholderApiCompat.PARSER.parseText(string, ParserContext.of()).getString() :
+			string;
 	}
 
 	@NotNull
 	default String getTranslatedSummary() {
 		String translationKey = "modmenu.summaryTranslation." + getId();
-		if ((getId().equals("minecraft") || getId().equals("java") || ModMenuConfig.TRANSLATE_DESCRIPTIONS.getValue()) && I18n.hasTranslation(translationKey)) {
+		if ((getId().equals("minecraft") || getId().equals("java") || ModMenuConfig.TRANSLATE_DESCRIPTIONS.getValue()) && I18n.hasTranslation(
+			translationKey)) {
 			return I18n.translate(translationKey);
 		}
 		return getTranslatedDescription();
 	}
 
-	@NotNull
-	String getDescription();
+	@NotNull String getDescription();
 
 	@NotNull
 	default String getTranslatedDescription() {
 		String translatableDescriptionKey = "modmenu.descriptionTranslation." + getId();
-		if ((getId().equals("minecraft") || getId().equals("java") || ModMenuConfig.TRANSLATE_DESCRIPTIONS.getValue()) && I18n.hasTranslation(translatableDescriptionKey)) {
+		if ((getId().equals("minecraft") || getId().equals("java") || ModMenuConfig.TRANSLATE_DESCRIPTIONS.getValue()) && I18n.hasTranslation(
+			translatableDescriptionKey)) {
 			return I18n.translate(translatableDescriptionKey);
 		}
 		return getDescription();
 	}
 
-	@NotNull
-	String getVersion();
+	default Text getFormattedDescription() {
+		String string = getTranslatedDescription();
+		return ModMenu.TEXT_PLACEHOLDER_COMPAT ?
+			TextPlaceholderApiCompat.PARSER.parseText(string, ParserContext.of()) :
+			Text.literal(string);
+	}
 
-	@NotNull
-	String getPrefixedVersion();
+	@NotNull String getVersion();
 
-	@NotNull
-	List<String> getAuthors();
+	@NotNull String getPrefixedVersion();
+
+	@NotNull List<String> getAuthors();
 
 	/**
 	 * @return a mapping of contributors to their roles.
 	 */
-	@NotNull
-	Map<String, Collection<String>> getContributors();
+	@NotNull Map<String, Collection<String>> getContributors();
 
 	/**
 	 * @return a mapping of roles to each contributor with that role.
 	 */
-	@NotNull
-	SortedMap<String, SortedSet<String>> getCredits();
+	@NotNull SortedMap<String, Set<String>> getCredits();
 
-	@NotNull
-	Set<Badge> getBadges();
+	@NotNull Set<Badge> getBadges();
 
-	@Nullable
-	String getWebsite();
+	@Nullable String getWebsite();
 
-	@Nullable
-	String getIssueTracker();
+	@Nullable String getIssueTracker();
 
-	@Nullable
-	String getSource();
+	@Nullable String getSource();
 
-	@Nullable
-	String getParent();
+	@Nullable String getParent();
 
-	@NotNull
-	Set<String> getLicense();
+	@NotNull Set<String> getLicense();
 
-	@NotNull
-	Map<String, String> getLinks();
+	@NotNull Map<String, String> getLinks();
 
 	boolean isReal();
 
 	boolean allowsUpdateChecks();
 
-	@Nullable
-	UpdateChecker getUpdateChecker();
+	@Nullable UpdateChecker getUpdateChecker();
 
 	void setUpdateChecker(@Nullable UpdateChecker updateChecker);
 
-	@Nullable
-	UpdateInfo getUpdateInfo();
+	@Nullable UpdateInfo getUpdateInfo();
 
 	void setUpdateInfo(@Nullable UpdateInfo updateInfo);
 
@@ -121,7 +119,8 @@ public interface Mod {
 			return false;
 		}
 
-		return updateInfo.isUpdateAvailable() && updateInfo.getUpdateChannel().compareTo(ModMenuConfig.UPDATE_CHANNEL.getValue()) >= 0;
+		return updateInfo.isUpdateAvailable() && updateInfo.getUpdateChannel()
+			.compareTo(ModMenuConfig.UPDATE_CHANNEL.getValue()) >= 0;
 	}
 
 	default @Nullable String getSha512Hash() throws IOException {
@@ -135,12 +134,20 @@ public interface Mod {
 	boolean isHidden();
 
 	enum Badge {
-		LIBRARY("modmenu.badge.library", 0xff107454, 0xff093929, "library"),
-		CLIENT("modmenu.badge.clientsideOnly", 0xff2b4b7c, 0xff0e2a55, null),
-		DEPRECATED("modmenu.badge.deprecated", 0xff841426, 0xff530C17, "deprecated"),
-		PATCHWORK_FORGE("modmenu.badge.forge", 0xff1f2d42, 0xff101721, null),
-		MODPACK("modmenu.badge.modpack", 0xff7a2b7c, 0xff510d54, null),
-		MINECRAFT("modmenu.badge.minecraft", 0xff6f6c6a, 0xff31302f, null);
+		LIBRARY("modmenu.badge.library", 0xff107454, 0xff093929, "library"), CLIENT("modmenu.badge.clientsideOnly",
+			0xff2b4b7c,
+			0xff0e2a55,
+			null
+		), DEPRECATED("modmenu.badge.deprecated", 0xff841426, 0xff530C17, "deprecated"), PATCHWORK_FORGE(
+			"modmenu.badge.forge",
+			0xff1f2d42,
+			0xff101721,
+			null
+		), MODPACK("modmenu.badge.modpack", 0xff7a2b7c, 0xff510d54, null), MINECRAFT("modmenu.badge.minecraft",
+			0xff6f6c6a,
+			0xff31302f,
+			null
+		);
 
 		private final Text text;
 		private final int outlineColor, fillColor;
@@ -166,8 +173,14 @@ public interface Mod {
 			return this.fillColor;
 		}
 
-		public static Set<Badge> convert(Set<String> badgeKeys) {
-			return badgeKeys.stream().map(KEY_MAP::get).collect(Collectors.toSet());
+		public static Set<Badge> convert(Set<String> badgeKeys, String modId) {
+			return badgeKeys.stream().map(key -> {
+				if (!KEY_MAP.containsKey(key)) {
+					ModMenu.LOGGER.warn("Skipping unknown badge key '{}' specified by mod '{}'", key, modId);
+				}
+
+				return KEY_MAP.get(key);
+			}).filter(Objects::nonNull).collect(Collectors.toSet());
 		}
 
 		static {

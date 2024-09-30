@@ -24,18 +24,18 @@ import net.minecraft.text.TextContent;
 import net.minecraft.text.TranslatableTextContent;
 import net.minecraft.util.Identifier;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class ModMenuEventHandler {
-	public static final Identifier FABRIC_ICON_BUTTON_LOCATION = new Identifier(ModMenu.MOD_ID, "textures/gui/mods_button.png");
+	public static final Identifier MODS_BUTTON_TEXTURE = Identifier.of(ModMenu.MOD_ID, "textures/gui/mods_button.png");
 	private static KeyBinding MENU_KEY_BIND;
 
 	public static void register() {
-		MENU_KEY_BIND = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-				"key.modmenu.open_menu",
-				InputUtil.Type.KEYSYM,
-				InputUtil.UNKNOWN_KEY.getCode(),
-				"key.categories.misc"
+		MENU_KEY_BIND = KeyBindingHelper.registerKeyBinding(new KeyBinding("key.modmenu.open_menu",
+			InputUtil.Type.KEYSYM,
+			InputUtil.UNKNOWN_KEY.getCode(),
+			"key.categories.misc"
 		));
 		ClientTickEvents.END_CLIENT_TICK.register(ModMenuEventHandler::onClientEndTick);
 
@@ -66,10 +66,18 @@ public class ModMenuEventHandler {
 						}
 					}
 					if (buttonHasText(button, "menu.online")) {
-						if (ModMenuConfig.MODS_BUTTON_STYLE.getValue() == ModMenuConfig.TitleMenuButtonStyle.REPLACE_REALMS) {
-							buttons.set(i, new ModMenuButtonWidget(button.getX(), button.getY(), button.getWidth(), button.getHeight(), ModMenuApi.createModsButtonText(), screen));
+						if (ModMenuConfig.MODS_BUTTON_STYLE.getValue() ==
+							ModMenuConfig.TitleMenuButtonStyle.REPLACE_REALMS) {
+							buttons.set(i, new ModMenuButtonWidget(button.getX(),
+								button.getY(),
+								button.getWidth(),
+								button.getHeight(),
+								ModMenuApi.createModsButtonText(),
+								screen
+							));
 						} else {
-							if (ModMenuConfig.MODS_BUTTON_STYLE.getValue() == ModMenuConfig.TitleMenuButtonStyle.SHRINK) {
+							if (ModMenuConfig.MODS_BUTTON_STYLE.getValue() ==
+								ModMenuConfig.TitleMenuButtonStyle.SHRINK) {
 								button.setWidth(98);
 							}
 							modsButtonIndex = i + 1;
@@ -83,11 +91,37 @@ public class ModMenuEventHandler {
 			}
 			if (modsButtonIndex != -1) {
 				if (ModMenuConfig.MODS_BUTTON_STYLE.getValue() == ModMenuConfig.TitleMenuButtonStyle.CLASSIC) {
-					buttons.add(modsButtonIndex, new ModMenuButtonWidget(screen.width / 2 - 100, buttonsY + spacing, 200, 20, ModMenuApi.createModsButtonText(), screen));
+					buttons.add(modsButtonIndex, new ModMenuButtonWidget(screen.width / 2 - 100,
+						buttonsY + spacing,
+						200,
+						20,
+						ModMenuApi.createModsButtonText(),
+						screen
+					));
 				} else if (ModMenuConfig.MODS_BUTTON_STYLE.getValue() == ModMenuConfig.TitleMenuButtonStyle.SHRINK) {
-					buttons.add(modsButtonIndex, new ModMenuButtonWidget(screen.width / 2 + 2, buttonsY, 98, 20, ModMenuApi.createModsButtonText(), screen));
+					buttons.add(modsButtonIndex,
+						new ModMenuButtonWidget(screen.width / 2 + 2,
+							buttonsY,
+							98,
+							20,
+							ModMenuApi.createModsButtonText(),
+							screen
+						)
+					);
 				} else if (ModMenuConfig.MODS_BUTTON_STYLE.getValue() == ModMenuConfig.TitleMenuButtonStyle.ICON) {
-					buttons.add(modsButtonIndex, new UpdateCheckerTexturedButtonWidget(screen.width / 2 + 104, buttonsY, 20, 20, 0, 0, 20, FABRIC_ICON_BUTTON_LOCATION, 32, 64, button -> MinecraftClient.getInstance().setScreen(new ModsScreen(screen)), ModMenuApi.createModsButtonText()));
+					buttons.add(modsButtonIndex, new UpdateCheckerTexturedButtonWidget(screen.width / 2 + 104,
+						buttonsY,
+						20,
+						20,
+						0,
+						0,
+						20,
+						MODS_BUTTON_TEXTURE,
+						32,
+						64,
+						button -> MinecraftClient.getInstance().setScreen(new ModsScreen(screen)),
+						ModMenuApi.createModsButtonText()
+					));
 				}
 			}
 		}
@@ -100,11 +134,13 @@ public class ModMenuEventHandler {
 		}
 	}
 
-	public static boolean buttonHasText(Widget widget, String translationKey) {
+	public static boolean buttonHasText(Widget widget, String... translationKeys) {
 		if (widget instanceof ButtonWidget button) {
 			Text text = button.getMessage();
 			TextContent textContent = text.getContent();
-			return textContent instanceof TranslatableTextContent && ((TranslatableTextContent) textContent).getKey().equals(translationKey);
+
+			return textContent instanceof TranslatableTextContent && Arrays.stream(translationKeys)
+				.anyMatch(s -> ((TranslatableTextContent) textContent).getKey().equals(s));
 		}
 		return false;
 	}
@@ -112,7 +148,9 @@ public class ModMenuEventHandler {
 	public static void shiftButtons(Widget widget, boolean shiftUp, int spacing) {
 		if (shiftUp) {
 			widget.setY(widget.getY() - spacing / 2);
-		} else if (!(widget instanceof ClickableWidget button && button.getMessage().equals(TitleScreen.COPYRIGHT))) {
+		} else if (!(widget instanceof ClickableWidget button &&
+			button.getMessage().equals(Text.translatable("title.credits"))
+		)) {
 			widget.setY(widget.getY() + spacing / 2);
 		}
 	}

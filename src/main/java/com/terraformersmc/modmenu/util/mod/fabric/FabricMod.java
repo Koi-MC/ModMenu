@@ -51,7 +51,9 @@ public class FabricMod implements Mod {
 		this.container = modContainer;
 		this.metadata = modContainer.getMetadata();
 
-		if ("minecraft".equals(metadata.getId()) || "java".equals(metadata.getId())) {
+		String id = metadata.getId();
+
+		if ("minecraft".equals(id) || "java".equals(id)) {
 			allowsUpdateChecks = false;
 		}
 
@@ -71,19 +73,19 @@ public class FabricMod implements Mod {
 						CustomValue.CvObject parentObj = parentCv.getAsObject();
 						parentId = CustomValueUtil.getString("id", parentObj);
 						parentData = new ModMenuData.DummyParentData(
-								parentId.orElseThrow(() -> new RuntimeException("Parent object lacks an id")),
-								CustomValueUtil.getString("name", parentObj),
-								CustomValueUtil.getString("description", parentObj),
-								CustomValueUtil.getString("icon", parentObj),
-								CustomValueUtil.getStringSet("badges", parentObj).orElse(new HashSet<>())
+							parentId.orElseThrow(() -> new RuntimeException("Parent object lacks an id")),
+							CustomValueUtil.getString("name", parentObj),
+							CustomValueUtil.getString("description", parentObj),
+							CustomValueUtil.getString("icon", parentObj),
+							CustomValueUtil.getStringSet("badges", parentObj).orElse(new HashSet<>())
 						);
-						if (parentId.orElse("").equals(this.metadata.getId())) {
+						if (parentId.orElse("").equals(id)) {
 							parentId = Optional.empty();
 							parentData = null;
 							throw new RuntimeException("Mod declared itself as its own parent");
 						}
 					} catch (Throwable t) {
-						LOGGER.error("Error loading parent data from mod: " + metadata.getId(), t);
+						LOGGER.error("Error loading parent data from mod: " + id, t);
 					}
 				}
 			}
@@ -91,23 +93,22 @@ public class FabricMod implements Mod {
 			links.putAll(CustomValueUtil.getStringMap("links", modMenuObject).orElse(new HashMap<>()));
 			allowsUpdateChecks = CustomValueUtil.getBoolean("update_checker", modMenuObject).orElse(true);
 		}
-		this.modMenuData = new ModMenuData(
-				badgeNames,
-				parentId,
-				parentData
-		);
+		this.modMenuData = new ModMenuData(badgeNames, parentId, parentData, id);
 
 		/* Hardcode parents and badges for Fabric API & Fabric Loader */
-		String id = metadata.getId();
 		if (id.startsWith("fabric") && metadata.containsCustomValue("fabric-api:module-lifecycle")) {
-			if (FabricLoader.getInstance().isModLoaded("fabric-api") || !FabricLoader.getInstance().isModLoaded("fabric")) {
+			if (FabricLoader.getInstance().isModLoaded("fabric-api") || !FabricLoader.getInstance()
+				.isModLoaded("fabric")) {
 				modMenuData.fillParentIfEmpty("fabric-api");
 			} else {
 				modMenuData.fillParentIfEmpty("fabric");
 			}
 			modMenuData.badges.add(Badge.LIBRARY);
 		}
-		if (id.startsWith("fabric") && (id.equals("fabricloader") || metadata.getProvides().contains("fabricloader") || id.equals("fabric") || id.equals("fabric-api") || metadata.getProvides().contains("fabric") || metadata.getProvides().contains("fabric-api") || id.equals("fabric-language-kotlin"))) {
+		if (id.startsWith("fabric") && (id.equals("fabricloader") || metadata.getProvides()
+			.contains("fabricloader") || id.equals("fabric") || id.equals("fabric-api") || metadata.getProvides()
+			.contains("fabric") || metadata.getProvides()
+			.contains("fabric-api") || id.equals("fabric-language-kotlin"))) {
 			modMenuData.badges.add(Badge.LIBRARY);
 		}
 
@@ -116,7 +117,10 @@ public class FabricMod implements Mod {
 		if (this.metadata.getEnvironment() == ModEnvironment.CLIENT) {
 			badges.add(Badge.CLIENT);
 		}
-		if (OptionalUtil.isPresentAndTrue(CustomValueUtil.getBoolean("fabric-loom:generated", metadata)) || "java".equals(id)) {
+		if (OptionalUtil.isPresentAndTrue(CustomValueUtil.getBoolean(
+			"fabric-loom:generated",
+			metadata
+		)) || "java".equals(id)) {
 			badges.add(Badge.LIBRARY);
 		}
 		if ("deprecated".equals(CustomValueUtil.getString("fabric-api:module-lifecycle", metadata).orElse(null))) {
@@ -159,14 +163,21 @@ public class FabricMod implements Mod {
 			iconPath = "assets/" + ModMenu.MOD_ID + "/java_icon.png";
 		}
 		final String finalIconSourceId = iconSourceId;
-		ModContainer iconSource = FabricLoader.getInstance().getModContainer(iconSourceId).orElseThrow(() -> new RuntimeException("Cannot get ModContainer for Fabric mod with id " + finalIconSourceId));
+		ModContainer iconSource = FabricLoader.getInstance()
+			.getModContainer(iconSourceId)
+			.orElseThrow(() -> new RuntimeException("Cannot get ModContainer for Fabric mod with id " + finalIconSourceId));
 		NativeImageBackedTexture icon = iconHandler.createIcon(iconSource, iconPath);
 		if (icon == null) {
 			if (defaultIconWarning) {
 				LOGGER.warn("Warning! Mod {} has a broken icon, loading default icon", metadata.getId());
 				defaultIconWarning = false;
 			}
-			return iconHandler.createIcon(FabricLoader.getInstance().getModContainer(ModMenu.MOD_ID).orElseThrow(() -> new RuntimeException("Cannot get ModContainer for Fabric mod with id " + ModMenu.MOD_ID)), "assets/" + ModMenu.MOD_ID + "/unknown_icon.png");
+			return iconHandler.createIcon(
+				FabricLoader.getInstance()
+					.getModContainer(ModMenu.MOD_ID)
+					.orElseThrow(() -> new RuntimeException("Cannot get ModContainer for Fabric mod with id " + ModMenu.MOD_ID)),
+				"assets/" + ModMenu.MOD_ID + "/unknown_icon.png"
+			);
 		}
 		return icon;
 	}
@@ -212,7 +223,7 @@ public class FabricMod implements Mod {
 
 	@Override
 	public @NotNull Map<String, Collection<String>> getContributors() {
-		Map<String, Collection<String>> contributors = new HashMap<>();
+		Map<String, Collection<String>> contributors = new LinkedHashMap<>();
 
 		for (var contributor : this.metadata.getContributors()) {
 			contributors.put(contributor.getName(), List.of("Contributor"));
@@ -222,8 +233,8 @@ public class FabricMod implements Mod {
 	}
 
 	@Override
-	public @NotNull SortedMap<String, SortedSet<String>> getCredits() {
-		SortedMap<String, SortedSet<String>> credits = new TreeMap<>();
+	public @NotNull SortedMap<String, Set<String>> getCredits() {
+		SortedMap<String, Set<String>> credits = new TreeMap<>();
 
 		var authors = this.getAuthors();
 		var contributors = this.getContributors();
@@ -234,7 +245,7 @@ public class FabricMod implements Mod {
 
 		for (var contributor : contributors.entrySet()) {
 			for (var role : contributor.getValue()) {
-				credits.computeIfAbsent(role, key -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER));
+				credits.computeIfAbsent(role, key -> new LinkedHashSet<>());
 				credits.get(role).add(contributor.getKey());
 			}
 		}
@@ -333,7 +344,9 @@ public class FabricMod implements Mod {
 	public @Nullable String getSha512Hash() throws IOException {
 		if (container.getContainingMod().isEmpty() && container.getOrigin().getKind() == ModOrigin.Kind.PATH) {
 			List<Path> paths = container.getOrigin().getPaths();
-			var fileOptional = paths.stream().filter(path -> path.toString().toLowerCase(Locale.ROOT).endsWith(".jar")).findFirst();
+			var fileOptional = paths.stream()
+				.filter(path -> path.toString().toLowerCase(Locale.ROOT).endsWith(".jar"))
+				.findFirst();
 			if (fileOptional.isPresent()) {
 				var file = fileOptional.get().toFile();
 				if (file.isFile()) {
@@ -365,8 +378,8 @@ public class FabricMod implements Mod {
 		private @Nullable
 		final DummyParentData dummyParentData;
 
-		public ModMenuData(Set<String> badges, Optional<String> parent, DummyParentData dummyParentData) {
-			this.badges = Badge.convert(badges);
+		public ModMenuData(Set<String> badges, Optional<String> parent, DummyParentData dummyParentData, String id) {
+			this.badges = Badge.convert(badges, id);
 			this.parent = parent;
 			this.dummyParentData = dummyParentData;
 		}
@@ -408,12 +421,18 @@ public class FabricMod implements Mod {
 			private final Optional<String> icon;
 			private final Set<Badge> badges;
 
-			public DummyParentData(String id, Optional<String> name, Optional<String> description, Optional<String> icon, Set<String> badges) {
+			public DummyParentData(
+				String id,
+				Optional<String> name,
+				Optional<String> description,
+				Optional<String> icon,
+				Set<String> badges
+			) {
 				this.id = id;
 				this.name = name;
 				this.description = description;
 				this.icon = icon;
-				this.badges = Badge.convert(badges);
+				this.badges = Badge.convert(badges, id);
 			}
 
 			public String getId() {

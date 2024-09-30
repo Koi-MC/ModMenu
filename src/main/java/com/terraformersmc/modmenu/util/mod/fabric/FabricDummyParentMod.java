@@ -60,8 +60,13 @@ public class FabricDummyParentMod implements Mod {
 			}
 		}
 		final String finalIconSourceId = iconSourceId;
-		ModContainer iconSource = FabricLoader.getInstance().getModContainer(iconSourceId).orElseThrow(() -> new RuntimeException("Cannot get ModContainer for Fabric mod with id " + finalIconSourceId));
-		return Objects.requireNonNull(iconHandler.createIcon(iconSource, iconPath), "Mod icon for " + getId() + " is null somehow (should be filled with default in this case)");
+		ModContainer iconSource = FabricLoader.getInstance()
+			.getModContainer(iconSourceId)
+			.orElseThrow(() -> new RuntimeException("Cannot get ModContainer for Fabric mod with id " + finalIconSourceId));
+		return Objects.requireNonNull(
+			iconHandler.createIcon(iconSource, iconPath),
+			"Mod icon for " + getId() + " is null somehow (should be filled with default in this case)"
+		);
 	}
 
 	@Override
@@ -94,7 +99,7 @@ public class FabricDummyParentMod implements Mod {
 	}
 
 	@Override
-	public @NotNull SortedMap<String, SortedSet<String>> getCredits() {
+	public @NotNull SortedMap<String, Set<String>> getCredits() {
 		return new TreeMap<>();
 	}
 
